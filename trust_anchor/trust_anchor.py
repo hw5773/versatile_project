@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 app = Flask(__name__)
 
 @app.route('/', methods = ['GET'])
-def api_lastupdate():
+def get_flexid_manager_list():
     if request.method == 'GET':
         result = {"flex_id_managers":\
                 [{"name":"mbox3","ip":"147.46.114.150","port":"3333"},\
