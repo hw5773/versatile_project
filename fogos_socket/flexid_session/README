@@ -1,2 +1,11 @@
 # Related man: Junghwan Lim
 # The source code for FlexID sessions.
+
+flexid_session/a/src/FlexIDSession/
+
+[classes]
+-FogOS_Server : test Server
+-FogOS_Client : test client
+-FlexIDServerSocket : FlexID ServerSocket
+-FlexIDSocket : FlexID Socket
+
