@@ -1,4 +1,4 @@
-package FlexIDSessionServer;
+package FlexIDSession;
 
 public class FlexIDInfo {
 	byte[] id;

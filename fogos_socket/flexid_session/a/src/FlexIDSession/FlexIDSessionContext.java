@@ -1,4 +1,4 @@
-package FlexIDSessionServer;
+package FlexIDSession;
 
 public class FlexIDSessionContext {
 	int length;
