@@ -1,4 +1,4 @@
-package FlexIDSessionClient;
+package FlexIDSession;
 
 import java.io.*;
 import java.io.IOException;
