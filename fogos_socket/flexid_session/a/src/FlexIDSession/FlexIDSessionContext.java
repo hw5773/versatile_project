@@ -31,8 +31,9 @@ public class FlexIDSessionContext {
 	}
 	
 	Object read(int bytes) {
-		byte[] readBytes = rbuff;
-		ByteArrayInputStream bis = new ByteArrayInputStream(readBytes);
+		byte[] readData = new byte[bytes];
+		int read = readBuff(readData, bytes);
+		ByteArrayInputStream bis = new ByteArrayInputStream(readData);
 		ObjectInput in = null;
 		try {
 		  in = new ObjectInputStream(bis);
@@ -51,17 +52,17 @@ public class FlexIDSessionContext {
 		  out = new ObjectOutputStream(bos);   
 		  out.writeObject(o);
 		  out.flush();
-		  wbuff = bos.toByteArray();
+		  writeBuff(bos.toByteArray());
 		  bos.close();
 		} catch (IOException ex) {}
 	}
 	
-	int readBuff(byte[] dataToRead, int startIdx, int endIdx) {
+	int readBuff(byte[] data, int bytesToRead) {
 		int readBytes = 0;
 		return readBytes;
 	}
 
-	int writeBuff(byte[] dataToWrite) {
+	int writeBuff(byte[] data) {
 		int writeBytes = 0;
 		return writeBytes;
 	}
