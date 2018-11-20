@@ -14,22 +14,24 @@ import java.io.ObjectOutputStream;
  */
 public class FlexIDSessionContext {
 	public static final int BUF_SIZE = 1024;   
-
+	int rBuffHead, wBuffHead;
 	int length;
 	FlexID SFID; // source FlexID
 	FlexID DFID; // destination FlexID
 	int lastSeq;
 	int lastAck;
-	byte[] rbuf, wbuf; // make it with a circular queue
+	byte[] rbuff, wbuff; // make it with a circular queue
 
 	public FlexIDSessionContext() {
 		super();
-		this.rbuf = new byte[BUF_SIZE];
-		this.wbuf = new byte[BUF_SIZE];
+		this.rbuff = new byte[BUF_SIZE];
+		this.wbuff = new byte[BUF_SIZE];
+		this.rBuffHead = 0;
+		this.wBuffHead = 0;
 	}
 	
-	Object readBuf(int bytes) {
-		byte[] readBytes = rbuf;
+	Object read(int bytes) {
+		byte[] readBytes = rbuff;
 		ByteArrayInputStream bis = new ByteArrayInputStream(readBytes);
 		ObjectInput in = null;
 		try {
@@ -42,16 +44,26 @@ public class FlexIDSessionContext {
 		return null;
  	}
 	
-	void writeBuf(Object o) {
+	void write(Object o) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		ObjectOutput out = null;
 		try {
 		  out = new ObjectOutputStream(bos);   
 		  out.writeObject(o);
 		  out.flush();
-		  wbuf = bos.toByteArray();
+		  wbuff = bos.toByteArray();
 		  bos.close();
 		} catch (IOException ex) {}
+	}
+	
+	int readBuff(byte[] dataToRead, int startIdx, int endIdx) {
+		int readBytes = 0;
+		return readBytes;
+	}
+
+	int writeBuff(byte[] dataToWrite) {
+		int writeBytes = 0;
+		return writeBytes;
 	}
 
 	public int getLength() {
@@ -85,16 +97,16 @@ public class FlexIDSessionContext {
 		this.lastAck = lastAck;
 	}
 	public byte[] getRbuf() {
-		return rbuf;
+		return rbuff;
 	}
 	public void setRbuf(byte[] rbuf) {
-		this.rbuf = rbuf;
+		this.rbuff = rbuf;
 	}
 	public byte[] getWbuf() {
-		return wbuf;
+		return wbuff;
 	}
 	public void setWbuf(byte[] wbuf) {
-		this.wbuf = wbuf;
+		this.wbuff = wbuf;
 	}
 }
 
