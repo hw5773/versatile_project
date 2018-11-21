@@ -28,7 +28,7 @@ public class FogOS_Client {
 		DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
 		
 		try {
-			byte[] message = "Hello".getBytes();
+			byte[] message = "Hello".getBytes(); // TODO: define message format.
 			dOut.writeInt(message.length);
 			dOut.write(message);
 			dOut.flush();
