@@ -5,7 +5,7 @@ import java.net.*;
 
 public class FlexIDServerSocket {
 	private ServerSocket server;
-	private FlexIDSessionContext context;
+	private FlexIDSession context;
 	FlexIDServerSocket() {
 		try {
 			server = new ServerSocket();

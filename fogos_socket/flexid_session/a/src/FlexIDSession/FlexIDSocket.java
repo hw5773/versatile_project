@@ -22,11 +22,19 @@ public class FlexIDSocket {
 			
 			dIn = new DataInputStream(socket.getInputStream());
 			dOut = new DataOutputStream(socket.getOutputStream());
-
 			
 		} catch(Exception e) {
 			e.printStackTrace();
 		}	
+	}
+	public FlexIDSocket(Socket sock) {
+		try {
+			socket = sock;
+			dIn = new DataInputStream(socket.getInputStream());
+			dOut = new DataOutputStream(socket.getOutputStream());		
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public byte[] read() {
