@@ -15,11 +15,16 @@ public class Conversion {
 	}
 	
 	public static void byteToAscii(byte[] b) {
-		System.out.print("Text [Ascii format]: ");
+		System.out.print("[Ascii format] ");
 		for(int i=0; i<b.length; i++) {
 			System.out.print((int)b[i] + " ");
 		}
 		System.out.println();
+	}
+	public static void printString(byte[] b) {
+		System.out.print("Text [String format]: ");
+		String str = new String(b);
+		System.out.println(str);
 	}
 
 }

@@ -3,6 +3,7 @@ package FlexIDSession;
 import java.io.DataOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.net.*;
 
 /**
  * FlexID socket �꽭�뀡�씠 �쑀吏��릺�뒗 �룞�븞�쓽 context �젙蹂� �겢�옒�뒪
@@ -11,6 +12,7 @@ import java.util.Arrays;
 public class FlexIDSession implements Serializable {
 	// mckwak: getter/setter, Serializable interface �븷�떦
 	private static final long serialVersionUID = 1L;
+	private static final int port = 7783;
 
 	private FlexID SFID; // source FlexID
 	private FlexID DFID; // destination FlexID
@@ -32,7 +34,7 @@ public class FlexIDSession implements Serializable {
 	private Thread inThread;
 	private Thread outThread;
 	
-	public FlexIDSession(FlexID sFID, FlexID dFID) {
+	public FlexIDSession(FlexID sFID, FlexID dFID, FlexIDSocket sock) {
 		SFID = sFID;
 		DFID = dFID;
 		connID = new byte[20]; // TODO: Generate with FlexIDs.
@@ -45,16 +47,36 @@ public class FlexIDSession implements Serializable {
 		
 		rbuf = new CircularQueue();
 		wbuf = new CircularQueue();
-		socket = new FlexIDSocket(DFID, 7779); // TODO: Get port #
+		if(sock != null)
+			socket = sock;
+		else
+			socket = new FlexIDSocket(DFID, port); // TODO: Get port #
 		
 		inThread = new Thread(new inbound());
 		inThread.setDaemon(true);
-		inThread.start();
+		//inThread.start();
 		
 		outThread = new Thread(new outbound());
 		outThread.setDaemon(true);
 		outThread.start();
+	}
+	public FlexIDSession(FlexID sFID, FlexID dFID) {
+		this(sFID, dFID, null);
+	}
+	public static FlexIDSession accept() {
+		FlexIDServerSocket server = new FlexIDServerSocket(port);
+		System.out.println("Server waits a connections.");
+		FlexIDSocket sock = server.accept();
+		if(sock == null) {
+			System.out.println("accept failed.");
+			return null;
+		}
 		
+		System.out.println("Connected.");
+		FlexID sFID = new FlexID();
+		FlexID dFID = new FlexID();
+		
+		return new FlexIDSession(sFID, dFID, sock);
 	}
 
 	public void send(byte[] msg) {
@@ -91,6 +113,7 @@ public class FlexIDSession implements Serializable {
 				while(!inThread.isInterrupted()) {
 					byte[] message;
 					if((message = getRecvMsg()) != null) {
+						Thread.sleep(10000);
 						byte[] header = getHeader(message); // length(2B) + connID(20B) + seq(4B), ack(4B)
 						byte[] data = getData(message);
 						byte[] msgConnID = Arrays.copyOfRange(header, 2, 21);
@@ -135,11 +158,16 @@ public class FlexIDSession implements Serializable {
 			try {
 				while(!outThread.isInterrupted()) {
 					if(checkMsgToSend() == 1) {
+						System.out.println("send wbuf msg to socket");
+						System.out.println("hi1");
 						byte[] data = wbuf.read(2048);
 						byte[] header = setHeader(data);
 						byte[] message = new byte[30 + data.length];
+						System.out.println("hi2");
 						System.arraycopy(header, 0, message, 0, 30);
 						System.arraycopy(data, 0, message, 30, data.length);
+						System.out.println("MSG: ");
+						Conversion.byteToAscii(message);
 						socket.write(message);
 					}
 					// TODO: get data from wbuf, add header, send to socket, change sentAck/sentSEQ.
@@ -147,6 +175,8 @@ public class FlexIDSession implements Serializable {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+			
+			System.out.println("done.");
 		}
 	}
 	
@@ -192,7 +222,9 @@ public class FlexIDSession implements Serializable {
 		return null;
 	}
 	
-	
+	public void close() {
+		socket.close();
+	}
 	public FlexID getSFID() {
 		return SFID;
 	}

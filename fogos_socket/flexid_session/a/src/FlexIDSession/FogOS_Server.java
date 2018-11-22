@@ -15,19 +15,20 @@ public class FogOS_Server {
 	}
 	
 	public static void main(String[] args) {
-		FlexID my = new FlexID();	// TODO
-		FlexID peer = new FlexID();	// TODO
-		FlexIDServerSocket server = new FlexIDServerSocket(7779);
-		System.out.println("Server waits a connections.");
-		FlexIDSocket socket = server.accept();
-		System.out.println("Connected.");
-		
-		FlexIDSession FS1 = new FlexIDSession(my, peer);
-
-		/* Session Management */
-//		DataInputStream dIn = new DataInputStream(socket.getInputStream());
+		FlexIDSession FS1 = FlexIDSession.accept();;
 		try {
-			FS1.receive();
+			if(FS1 == null) {
+				System.out.println("Server failed.");
+				System.exit(0);
+			}
+			
+			while(true) {
+				byte[] msg = FS1.receive();
+				if(msg != null) {
+					Conversion.byteToAscii(msg);
+				}
+				Thread.sleep(1000);
+			}
 			
 //			int length = dIn.readInt();
 //			System.out.println("length: " + length);
@@ -40,6 +41,8 @@ public class FogOS_Server {
 //			}
 		} catch (Exception e) {
 			e.printStackTrace();
+		} finally {
+			FS1.close();
 		}
 	}
 }

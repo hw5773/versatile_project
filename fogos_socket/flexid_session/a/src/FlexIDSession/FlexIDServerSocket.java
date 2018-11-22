@@ -5,7 +5,7 @@ import java.net.*;
 
 public class FlexIDServerSocket {
 	private ServerSocket server;
-	private FlexIDSession context;
+	
 	FlexIDServerSocket() {
 		try {
 			server = new ServerSocket();
@@ -25,14 +25,17 @@ public class FlexIDServerSocket {
 		return addr;
 	}
 	FlexIDSocket accept() {
-		Socket sock = new Socket();
 		try {
-			sock = server.accept();
+			Socket sock = server.accept();
+			FlexIDSocket socket = new FlexIDSocket(sock);
+			System.out.println("Accept success.");
+			return socket;	
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		FlexIDSocket socket = new FlexIDSocket(sock);
-		return socket;
+		
+		return null;
 	}
 	void bind(SocketAddress bindpoint) {
 		try {
