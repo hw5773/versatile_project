@@ -10,7 +10,7 @@ public class FlexIDSocket {
 	private DataOutputStream dOut;
 
 	public String FlexIDToIPAddress(FlexID address) {
-		String addr = "127.0.0.1"; // Get the IP address from a FlexIDManager.
+		String addr = "127.0.0.1"; // TODO: Get the IP address
 		return addr;
 	}
 	public FlexIDSocket(FlexID address, int port) {

@@ -162,11 +162,11 @@ public class FlexIDSession implements Serializable {
 	public byte[] setHeader(byte[] message) {
 		try {
 			// Header(30) = length(2B) + connID(20B) + seq(4B), ack(4B)
-					
 			byte[] length = new byte[2];
 			byte[] seq = new byte[4];
 			byte[] ack = new byte[4];
 			byte[] header = new byte[30];
+			
 			int msgLength;
 			
 			if(message == null) { // ack 

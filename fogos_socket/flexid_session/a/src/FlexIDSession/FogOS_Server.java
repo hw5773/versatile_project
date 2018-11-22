@@ -22,27 +22,29 @@ public class FogOS_Server {
 	
 	public static void main(String[] args) {
 		
-		FlexID my = new FlexID();
-		FlexID peer = new FlexID();	
-				
+		FlexID my = new FlexID();	// TODO
+		FlexID peer = new FlexID();	// TODO			
 		FlexIDServerSocket server = new FlexIDServerSocket(7779);
 		System.out.println("Server waits a connections.");
 		FlexIDSocket socket = server.accept();
 		System.out.println("Connected.");
 		
+		FlexIDSession FS1 = new FlexIDSession(my, peer);
 
 		/* Session Management */
-		DataInputStream dIn = new DataInputStream(socket.getInputStream());
+//		DataInputStream dIn = new DataInputStream(socket.getInputStream());
 		try {
-			int length = dIn.readInt();
-			System.out.println("length: " + length);
-			System.out.println("receiving a message.");
-			if(length>0) {
-				byte[] message = new byte[length];
-				dIn.readFully(message, 0, message.length);
-				printString(message);
-				byteToAscii(message);
-			}
+			FS1.receive();
+			
+//			int length = dIn.readInt();
+//			System.out.println("length: " + length);
+//			System.out.println("receiving a message.");
+//			if(length>0) {
+//				byte[] message = new byte[length];
+//				dIn.readFully(message, 0, message.length);
+//				printString(message);
+//				byteToAscii(message);
+//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -21,17 +21,18 @@ public class FogOS_Client {
 	}
 	
 	public static void main(String[] args) {
-		
+		FlexID SFID = new FlexID();
 		FlexID DFID = new FlexID();
 		System.out.println("Client connects to a server.");
-		FlexIDSocket socket = new FlexIDSocket(DFID, 7779);
-		DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
+		FlexIDSession FS1 = new FlexIDSession(SFID, DFID);
+		//DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
 		
 		try {
 			byte[] message = "Hello".getBytes(); // TODO: define message format.
-			dOut.writeInt(message.length);
-			dOut.write(message);
-			dOut.flush();
+			FS1.send(message);
+//			dOut.writeInt(message.length);
+//			dOut.write(message);
+//			dOut.flush();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
