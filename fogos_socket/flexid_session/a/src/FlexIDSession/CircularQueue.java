@@ -62,7 +62,9 @@ public class CircularQueue {
 		}
 		item = new byte[size];
 		
-		if(isEmpty(size)) throw new ArrayIndexOutOfBoundsException();
+		if(size == 0) {
+			return null;
+		}
 		else {
 			int writeFrom = 0;
 			int writeLen = size;
@@ -75,6 +77,13 @@ public class CircularQueue {
 				Arrays.fill(queueArray,  front, front+(this.maxSize-front), (byte) 0);
 				front = 0;
 			}
+			System.out.println("queueArray: ");
+			Conversion.byteToAscii(queueArray);
+			System.out.println("front: " + front);
+			System.out.println("item: ");
+			Conversion.byteToAscii(item);
+			System.out.println("writeFrom: " + writeFrom);
+			System.out.println("writeLen: " + writeLen);
 			
 			System.arraycopy(queueArray, front, item, writeFrom, writeLen);
 			Arrays.fill(queueArray, front, front+size, (byte) 0);

@@ -7,13 +7,7 @@ import java.net.Socket;
 
 
 public class FogOS_Server {
-	public static void byteToAscii(byte[] b) {
-		System.out.print("Text [Ascii format]: ");
-		for(int i=0; i<b.length; i++) {
-			System.out.print((int)b[i] + " ");
-		}
-		System.out.println();
-	}
+
 	public static void printString(byte[] b) {
 		System.out.print("Text [String format]: ");
 		String str = new String(b);
@@ -21,9 +15,8 @@ public class FogOS_Server {
 	}
 	
 	public static void main(String[] args) {
-		
 		FlexID my = new FlexID();	// TODO
-		FlexID peer = new FlexID();	// TODO			
+		FlexID peer = new FlexID();	// TODO
 		FlexIDServerSocket server = new FlexIDServerSocket(7779);
 		System.out.println("Server waits a connections.");
 		FlexIDSocket socket = server.accept();
@@ -43,7 +36,7 @@ public class FogOS_Server {
 //				byte[] message = new byte[length];
 //				dIn.readFully(message, 0, message.length);
 //				printString(message);
-//				byteToAscii(message);
+//				Conversion.byteToAscii(message);
 //			}
 		} catch (Exception e) {
 			e.printStackTrace();

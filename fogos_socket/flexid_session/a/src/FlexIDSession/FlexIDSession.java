@@ -45,7 +45,6 @@ public class FlexIDSession implements Serializable {
 		
 		rbuf = new CircularQueue();
 		wbuf = new CircularQueue();
-		System.out.println("Client connects to a server.");
 		socket = new FlexIDSocket(DFID, 7779); // TODO: Get port #
 		
 		inThread = new Thread(new inbound());
@@ -54,7 +53,8 @@ public class FlexIDSession implements Serializable {
 		
 		outThread = new Thread(new outbound());
 		outThread.setDaemon(true);
-		outThread.start();	
+		outThread.start();
+		
 	}
 
 	public void send(byte[] msg) {

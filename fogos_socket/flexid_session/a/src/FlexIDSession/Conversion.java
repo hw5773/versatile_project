@@ -13,5 +13,13 @@ public class Conversion {
 				(byte) (a & 0xFF)
 		};
 	}
+	
+	public static void byteToAscii(byte[] b) {
+		System.out.print("Text [Ascii format]: ");
+		for(int i=0; i<b.length; i++) {
+			System.out.print((int)b[i] + " ");
+		}
+		System.out.println();
+	}
 
 }
