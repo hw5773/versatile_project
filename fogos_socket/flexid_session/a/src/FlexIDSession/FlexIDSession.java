@@ -6,13 +6,14 @@ import java.util.Arrays;
 import java.net.*;
 
 /**
- * FlexID socket �꽭�뀡�씠 �쑀吏��릺�뒗 �룞�븞�쓽 context �젙蹂� �겢�옒�뒪
+ * FlexID socket 占쎄쉭占쎈�∽옙�뵠 占쎌�筌욑옙占쎈┷占쎈뮉 占쎈짗占쎈툧占쎌벥 context 占쎌젟癰귨옙 占쎄깻占쎌삋占쎈뮞
  * @author mckwak
  */
 public class FlexIDSession implements Serializable {
-	// mckwak: getter/setter, Serializable interface �븷�떦
+	// mckwak: getter/setter, Serializable interface 占쎈막占쎈뼣
 	private static final long serialVersionUID = 1L;
-	private static final int port = 7783;
+	private static final int port = 7780;
+	int lock = 0;
 
 	private FlexID SFID; // source FlexID
 	private FlexID DFID; // destination FlexID
@@ -54,7 +55,7 @@ public class FlexIDSession implements Serializable {
 		
 		inThread = new Thread(new inbound());
 		inThread.setDaemon(true);
-		//inThread.start();
+		inThread.start();
 		
 		outThread = new Thread(new outbound());
 		outThread.setDaemon(true);
@@ -79,11 +80,21 @@ public class FlexIDSession implements Serializable {
 		return new FlexIDSession(sFID, dFID, sock);
 	}
 
+	// Application send
 	public void send(byte[] msg) {
+		while(lock == 1) {
+		}
+		lock = 1;
 		wbuf.write(msg);
+		lock = 0;
 	}
+	// Application receive
 	public byte[] receive() {
-		return rbuf.read(2048);
+		while(lock != 1) {}
+		lock = 1;
+		byte[] result = rbuf.read(2048);
+		lock = 0;
+		return result;
 	}
 	
 	// Check wbuf to send msg to socket.
@@ -111,9 +122,11 @@ public class FlexIDSession implements Serializable {
 		public void run() {
 			try {
 				while(!inThread.isInterrupted()) {
+					//checkAddress();	// TODO
 					byte[] message;
-					if((message = getRecvMsg()) != null) {
-						Thread.sleep(10000);
+					if((message = getRecvMsg()) != null && (lock == 0)) {
+						lock = 1;
+						
 						byte[] header = getHeader(message); // length(2B) + connID(20B) + seq(4B), ack(4B)
 						byte[] data = getData(message);
 						byte[] msgConnID = Arrays.copyOfRange(header, 2, 21);
@@ -149,7 +162,11 @@ public class FlexIDSession implements Serializable {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
+				lock = 0;
 			}
+
+			System.out.println("inThread done.");
 		}
 	}
 		
@@ -157,13 +174,15 @@ public class FlexIDSession implements Serializable {
 		public void run() {
 			try {
 				while(!outThread.isInterrupted()) {
-					if(checkMsgToSend() == 1) {
+					//checkAddress();	// TODO
+					
+					if(checkMsgToSend() == 1 && (lock == 0)) {
+						lock = 1;
 						System.out.println("send wbuf msg to socket");
-						System.out.println("hi1");
 						byte[] data = wbuf.read(2048);
 						byte[] header = setHeader(data);
 						byte[] message = new byte[30 + data.length];
-						System.out.println("hi2");
+						
 						System.arraycopy(header, 0, message, 0, 30);
 						System.arraycopy(data, 0, message, 30, data.length);
 						System.out.println("MSG: ");
@@ -174,9 +193,11 @@ public class FlexIDSession implements Serializable {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
+				lock = 0;
 			}
 			
-			System.out.println("done.");
+			System.out.println("outThread done.");
 		}
 	}
 	
@@ -205,14 +226,19 @@ public class FlexIDSession implements Serializable {
 			}
 			else { // data
 				msgLength = message.length + 30;
-				SEQ += msgLength;
-				seq = String.valueOf(SEQ).getBytes("UTF-8");
+				SEQ += (msgLength - 30);
+				byte[] temp = String.valueOf(SEQ).getBytes("UTF-8");
+				System.arraycopy(temp, 0, seq, 0, temp.length);
 			}
 			
+			length = Conversion.int32ToByteArray(msgLength);
 			System.arraycopy(length, 0, header, 0, 2);
 			System.arraycopy(connID, 0, header, 2, 20);
 			System.arraycopy(seq, 0, header, 22, 4);
 			System.arraycopy(ack, 0, header, 26, 4);
+			
+			System.out.println("header: ");
+			Conversion.byteToAscii(header);
 			
 			return header;
 		} catch (Exception e) {

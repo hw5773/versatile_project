@@ -25,9 +25,11 @@ public class FogOS_Server {
 			while(true) {
 				byte[] msg = FS1.receive();
 				if(msg != null) {
+					System.out.println("[Server] Received message: ");
 					Conversion.byteToAscii(msg);
 				}
 				Thread.sleep(1000);
+				System.out.println("wake up");
 			}
 			
 //			int length = dIn.readInt();
