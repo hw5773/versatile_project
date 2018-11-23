@@ -30,10 +30,8 @@ public class CircularQueue {
 		return (currentSize + size > this.maxSize);
 	}
 	
-	public void write(byte[] item) {
-		System.out.print("write item: ");
-		Conversion.byteToAscii(item);
-		if(isFull(item.length)) throw new ArrayIndexOutOfBoundsException();
+	synchronized public int write(byte[] item) {
+		if(isFull(item.length)) return -1;
 		else {
 			int readFrom = 0;
 			int readLen = item.length;
@@ -53,42 +51,43 @@ public class CircularQueue {
 			if(front == -1) {
 				front = 0;
 			}
+			return item.length;
 		}
 
 	}
 		
-	public byte[] read(int size) {
-		byte[] item;
+	synchronized public int read(byte[] b) {
+		int size = b.length; // size: amount of read
 		
 		if(currentSize < size) {
 			size = currentSize;
 		}
-		item = new byte[size];
-		System.out.println("size: " + size);
 		
-		if(size == 0) {
-			return null;
+//		System.out.println("size in buf: " + currentSize);
+		
+		if(currentSize == 0) {
+			return -1;
 		}
 		else {
 			int writeFrom = 0;
 			int writeLen = size;
 			
 			if((front+size) > this.maxSize) {
-				System.arraycopy(queueArray, front, item, 0, (this.maxSize-front));
+				System.arraycopy(queueArray, front, b, 0, (this.maxSize-front));
 				
 				writeFrom = this.maxSize-front;
 				writeLen = size - (this.maxSize-front);
 				Arrays.fill(queueArray,  front, front+(this.maxSize-front), (byte) 0);
 				front = 0;
 			}
-			System.arraycopy(queueArray, front, item, writeFrom, writeLen);
+			System.arraycopy(queueArray, front, b, writeFrom, writeLen);
 
 			Arrays.fill(queueArray, front, front+size, (byte) 0);
 			front = (front + writeLen) % this.maxSize;
 			
 			currentSize -= size;
 			
-			return item;
+			return size;
 		}
 	}
 }

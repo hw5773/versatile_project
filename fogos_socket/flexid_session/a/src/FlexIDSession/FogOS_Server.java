@@ -23,26 +23,20 @@ public class FogOS_Server {
 			}
 			
 			while(true) {
-				byte[] msg = FS1.receive();
-				if(msg != null) {
+				byte[] msg = new byte[2048];
+				int msgLen;
+				if((msgLen = FS1.receive(msg)) > 0) {
 					System.out.println("[Server] Received message: ");
-					Conversion.byteToAscii(msg);
+					Conversion.byteToAscii(msg, msgLen);
 				}
-				Thread.sleep(1000);
-				System.out.println("wake up");
+//				System.out.println("[Server] Goto sleep");
+//				Thread.sleep(500);
+//				System.out.println("wake up");
 			}
 			
-//			int length = dIn.readInt();
-//			System.out.println("length: " + length);
-//			System.out.println("receiving a message.");
-//			if(length>0) {
-//				byte[] message = new byte[length];
-//				dIn.readFully(message, 0, message.length);
-//				printString(message);
-//				Conversion.byteToAscii(message);
-//			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 		} finally {
 			FS1.close();
 		}

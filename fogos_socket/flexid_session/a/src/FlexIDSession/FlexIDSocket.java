@@ -20,8 +20,10 @@ public class FlexIDSocket {
 			
 			socket = new Socket(IP_addr, port);
 			
-			dIn = new DataInputStream(socket.getInputStream());
-			dOut = new DataOutputStream(socket.getOutputStream());
+			if((dIn = new DataInputStream(socket.getInputStream())) == null)
+					System.exit(0);
+			if((dOut = new DataOutputStream(socket.getOutputStream())) == null)
+					System.exit(0);
 			
 		} catch(Exception e) {
 			e.printStackTrace();
@@ -40,6 +42,7 @@ public class FlexIDSocket {
 	public byte[] read() {
 		try {
 			int length = dIn.readInt();
+//			System.out.println("received message lengeth: " + length);
 			if(length > 0) {
 				byte[] msg = new byte[length];
 				dIn.readFully(msg, 0, msg.length);
@@ -47,6 +50,7 @@ public class FlexIDSocket {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 		return null;
 	}

@@ -6,13 +6,13 @@ import java.util.Arrays;
 import java.net.*;
 
 /**
- * FlexID socket 占쎄쉭占쎈�∽옙�뵠 占쎌�筌욑옙占쎈┷占쎈뮉 占쎈짗占쎈툧占쎌벥 context 占쎌젟癰귨옙 占쎄깻占쎌삋占쎈뮞
+ * FlexID socket �뜝�럡�돪�뜝�럥占썩댙�삕占쎈턄 �뜝�럩占썹춯�쉻�삕�뜝�럥�뵹�뜝�럥裕� �뜝�럥吏쀥뜝�럥�닱�뜝�럩踰� context �뜝�럩�젧�솻洹⑥삕 �뜝�럡源삣뜝�럩�굥�뜝�럥裕�
  * @author mckwak
  */
 public class FlexIDSession implements Serializable {
-	// mckwak: getter/setter, Serializable interface 占쎈막占쎈뼣
+	// mckwak: getter/setter, Serializable interface �뜝�럥留됧뜝�럥堉�
 	private static final long serialVersionUID = 1L;
-	private static final int port = 7780;
+	private static final int port = 7776;
 	int lock = 0;
 
 	private FlexID SFID; // source FlexID
@@ -25,8 +25,11 @@ public class FlexIDSession implements Serializable {
 //	private int recvAck;	// received ack #
 	
 	// managed at the inbound, outbound function.
-	private int SEQ;	
-	private int ACK;	
+	private int sentSEQ;
+	private int recvACK;
+	private int recvSEQ;
+	private int sentACK;
+	
 	
 	private CircularQueue rbuf;
 	private CircularQueue wbuf;
@@ -43,8 +46,8 @@ public class FlexIDSession implements Serializable {
 //		recvAck = 0;
 //		sentBytes = 0;
 //		sentAck = 0;
-		SEQ = 0;
-		ACK = 0;
+		sentSEQ = 0;
+		sentACK = 0;
 		
 		rbuf = new CircularQueue();
 		wbuf = new CircularQueue();
@@ -81,20 +84,37 @@ public class FlexIDSession implements Serializable {
 	}
 
 	// Application send
-	public void send(byte[] msg) {
-		while(lock == 1) {
-		}
+	public int send(byte[] msg) {
+//		while(true) {
+//			if(lock != 1) break;
+//		}
 		lock = 1;
-		wbuf.write(msg);
-		lock = 0;
+		int mLen;
+
+		if((mLen = wbuf.write(msg)) < 0) {
+			System.out.println("mLen: " + mLen);
+			lock = 0;
+			return -1;
+		}
+		else {
+			lock = 0;
+			return mLen;
+		}
 	}
 	// Application receive
-	public byte[] receive() {
-		while(lock != 1) {}
+	public int receive(byte[] b) {
+		while(lock == 1) {}
 		lock = 1;
-		byte[] result = rbuf.read(2048);
-		lock = 0;
-		return result;
+		int bLen = rbuf.read(b);
+		
+		if(b == null) {
+			lock = 0;
+			return -1;
+		}
+		else {
+			lock = 0;
+			return bLen; 
+		}
 	}
 	
 	// Check wbuf to send msg to socket.
@@ -113,6 +133,7 @@ public class FlexIDSession implements Serializable {
 			if(message != null) return message;
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 		
 		return null;
@@ -122,47 +143,66 @@ public class FlexIDSession implements Serializable {
 		public void run() {
 			try {
 				while(!inThread.isInterrupted()) {
+
 					//checkAddress();	// TODO
+
 					byte[] message;
-					if((message = getRecvMsg()) != null && (lock == 0)) {
+					if(lock != 1) {
 						lock = 1;
-						
-						byte[] header = getHeader(message); // length(2B) + connID(20B) + seq(4B), ack(4B)
-						byte[] data = getData(message);
-						byte[] msgConnID = Arrays.copyOfRange(header, 2, 21);
-						
-						if(connID != msgConnID) {
-							System.out.println("connID unmatched.");
-							continue;
-						}
-						
-						int length = Conversion.byteArrayToInt(Arrays.copyOfRange(header, 0, 1)); // total length
-						int msgSeq = Conversion.byteArrayToInt(Arrays.copyOfRange(header, 22, 25));
-						int msgAck = Conversion.byteArrayToInt(Arrays.copyOfRange(header, 26, 29));
-						
-						if(length > 30) { // received data message.
-							if(ACK < msgSeq) {
-								ACK = msgSeq+1;
-								rbuf.write(data);
-								
-								// send ACK message.
-								byte[] ACKheader = setHeader(null);
-								byte[] ACKmessage = new byte[30];
-								System.arraycopy(ACKheader, 0, ACKmessage, 0, 30);
-								socket.write(ACKheader);
+					
+						if((message = getRecvMsg()) != null) {
+							
+							byte[] header = getHeader(message); // length(2B) + connID(20B) + seq(4B), ack(4B)
+							byte[] data = getData(message);
+							byte[] msgConnID = Arrays.copyOfRange(header, 2, 22);
+							
+							if(!Arrays.equals(connID, msgConnID)) {
+								System.out.println("connID unmatched.");
+								lock = 0;
+								continue;
+							}
+							
+							int length = Conversion.byte2ToInt(Arrays.copyOfRange(header, 0, 2)); // total length
+							int msgSeq = Conversion.byte4ToInt(Arrays.copyOfRange(header, 22, 26));
+							int msgAck = Conversion.byte4ToInt(Arrays.copyOfRange(header, 26, 30));
+							
+	//						System.out.println("msgSeq: " + msgSeq);
+	//						System.out.println("msgAck: " + msgAck);
+							
+							if(length > 30) { // received data message.
+								if(sentACK < msgSeq) {
+									recvSEQ = msgSeq;
+									sentACK = msgSeq+1;
+									rbuf.write(data);
+									
+									// send ACK message.
+									byte[] ACKmessage = setHeader(null);
+									System.out.println("Wait for sending ACK (2s)");
+									Thread.sleep(2000);
+									System.out.println("Send ACK message: ");
+									
+									Conversion.byteToAscii(ACKmessage);
+									socket.write(ACKmessage);
+	//								System.out.println("ACK write done.");
+								}
+							}
+							else { // received ACK message.
+	//							System.out.println("Received ACK message");
+								if(msgAck != (sentSEQ+1)) {
+									System.out.println("ACK number error!");
+									break;
+								}
+								recvACK = msgAck;
 							}
 						}
-						else { // received ACK message.
-							if(msgAck != (SEQ+1)) {
-								System.out.println("ACK number error!");
-								break;
-							}
-						}
+						lock = 0;
 					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+				System.exit(0);
 			} finally {
+				
 				lock = 0;
 			}
 
@@ -175,11 +215,25 @@ public class FlexIDSession implements Serializable {
 			try {
 				while(!outThread.isInterrupted()) {
 					//checkAddress();	// TODO
+
+					while(lock == 1) {}
+					lock = 1;
 					
-					if(checkMsgToSend() == 1 && (lock == 0)) {
+					if((recvACK != (sentSEQ+1)) && (sentSEQ != 0)) {
+//						System.out.println("Error here.");
+//						System.out.println("recvACK: " + recvACK);
+//						System.out.println("sentSEQ: " + sentSEQ);
+						lock = 0;
+						continue;
+					}
+					
+					if(checkMsgToSend() == 1) {
 						lock = 1;
-						System.out.println("send wbuf msg to socket");
-						byte[] data = wbuf.read(2048);
+//						System.out.println("send wbuf msg to socket");
+						byte[] data = new byte[2048];
+						int dataLen = wbuf.read(data);
+						data = Arrays.copyOfRange(data, 0, dataLen);
+						
 						byte[] header = setHeader(data);
 						byte[] message = new byte[30 + data.length];
 						
@@ -189,10 +243,12 @@ public class FlexIDSession implements Serializable {
 						Conversion.byteToAscii(message);
 						socket.write(message);
 					}
-					// TODO: get data from wbuf, add header, send to socket, change sentAck/sentSEQ.
+					
+					lock = 0;
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+				System.exit(0);
 			} finally {
 				lock = 0;
 			}
@@ -205,9 +261,9 @@ public class FlexIDSession implements Serializable {
 		return Arrays.copyOfRange(message, 0, 30);
 	}
 	public byte[] getData(byte[] message) {
-		int length = Conversion.byteArrayToInt(Arrays.copyOfRange(message, 0, 1));
-		byte[] data = new byte[length];
-		System.arraycopy(message, 30, data, 0, length); // 30: header size
+		int dataLength = Conversion.byte2ToInt(Arrays.copyOfRange(message, 0, 2)) - 30;
+		byte[] data = new byte[dataLength];
+		System.arraycopy(message, 30, data, 0, dataLength);
 		return data;
 	}
 	public byte[] setHeader(byte[] message) {
@@ -222,27 +278,27 @@ public class FlexIDSession implements Serializable {
 			
 			if(message == null) { // ack 
 				msgLength = 30;
-				ack = String.valueOf(ACK).getBytes("UTF-8");
+				System.out.println("ACK: " + sentACK);
+				ack = Conversion.int32ToByteArray(sentACK);
+				
 			}
 			else { // data
 				msgLength = message.length + 30;
-				SEQ += (msgLength - 30);
-				byte[] temp = String.valueOf(SEQ).getBytes("UTF-8");
+				sentSEQ += (msgLength - 30);
+				byte[] temp = Conversion.int32ToByteArray(sentSEQ);
 				System.arraycopy(temp, 0, seq, 0, temp.length);
 			}
 			
-			length = Conversion.int32ToByteArray(msgLength);
+			length = Conversion.int16ToByteArray(msgLength);
 			System.arraycopy(length, 0, header, 0, 2);
 			System.arraycopy(connID, 0, header, 2, 20);
 			System.arraycopy(seq, 0, header, 22, 4);
 			System.arraycopy(ack, 0, header, 26, 4);
 			
-			System.out.println("header: ");
-			Conversion.byteToAscii(header);
-			
 			return header;
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 		
 		return null;

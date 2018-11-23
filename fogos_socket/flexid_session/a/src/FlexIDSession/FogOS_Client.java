@@ -18,14 +18,16 @@ public class FogOS_Client {
 		try {
 			System.out.println("Client sends a message to the server");
 			byte[] message = "Hello".getBytes(); // TODO: define message format.
-			FS1.send(message);
-			Thread.sleep(5000);
-//			dOut.writeInt(message.length);
-//			dOut.write(message);
-//			dOut.flush();
-			byte[] message2 = "Welcome".getBytes();
-			FS1.send(message2);
-			Thread.sleep(100000);
+
+			int i=1;
+			while(true) {
+				if(FS1.send(message) > 0) i++;
+				if(i >= 200) break;
+				if(i%10 == 0) Thread.sleep(1000);
+			}
+			System.out.println("done");
+			Thread.sleep(1000000);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
