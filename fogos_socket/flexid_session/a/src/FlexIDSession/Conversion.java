@@ -29,7 +29,7 @@ public class Conversion {
 		};
 	}
 	
-	public static void byteToAscii(byte[] b) {
+	synchronized public static void byteToAscii(byte[] b) {
 		System.out.print("[Ascii]	");
 		for(int i=0; i<b.length; i++) {
 			System.out.print((int)b[i] + " ");

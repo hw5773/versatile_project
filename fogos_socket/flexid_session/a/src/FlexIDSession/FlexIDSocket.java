@@ -68,6 +68,7 @@ public class FlexIDSocket {
 			return socket.getInputStream();
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 			return null;
 		}
 	}
@@ -76,6 +77,7 @@ public class FlexIDSocket {
 			return socket.getOutputStream();
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 			return null;
 		}
 	}

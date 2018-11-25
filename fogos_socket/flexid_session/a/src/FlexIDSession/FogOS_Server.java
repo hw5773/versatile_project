@@ -26,12 +26,10 @@ public class FogOS_Server {
 				byte[] msg = new byte[2048];
 				int msgLen;
 				if((msgLen = FS1.receive(msg)) > 0) {
-					System.out.println("[Server] Received message: ");
-					Conversion.byteToAscii(msg, msgLen);
+					System.out.println("[Server] Received message size: " + msgLen);
+//					Conversion.byteToAscii(msg, msgLen);
 				}
-//				System.out.println("[Server] Goto sleep");
-//				Thread.sleep(500);
-//				System.out.println("wake up");
+//				Thread.sleep(2000);
 			}
 			
 		} catch (Exception e) {
