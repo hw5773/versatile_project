@@ -130,6 +130,23 @@ public class FlexIDSession implements Serializable {
 			try {
 				while(!inThread.isInterrupted()) {
 					// checkAddress();	// TODO
+//					if (checkAddress()) {
+//						if (this.server == true)
+//						{
+//							continue; // leave it to outbound thread.
+//						}
+//						
+//						port = getServerPort();
+//						
+//						SFID = getSFID();
+//						DFID = getDFID();
+//						connID = new byte[20]; // TODO: Generate with FlexIDs.
+//						
+//						socket = new FlexIDSocket(DFID, port); // TODO: Get port #
+//						
+//						System.out.println("Connected.");
+//					}
+					
 					byte[] message;
 					if(lock != 1) {
 						lock = 1;
@@ -199,7 +216,24 @@ public class FlexIDSession implements Serializable {
 											
 						//checkAddress();	// TODO
 						/* if ip changed, creates new FlexIDSocket, connects,
-						   and retransmits the last message if necessary(stop-and-wait)   */ 
+						   and retransmits the last message if necessary(stop-and-wait)   */
+						
+						/* only for server which sends a data */
+//						if (checkAddress()) {
+//							port = new port;
+//							FlexIDServerSocket server = new FlexIDServerSocket(port);
+//							System.out.println("Server waits a connections.");
+//							FlexIDSocket sock = server.accept();
+//							System.out.println("Connected.");
+//							
+//							SFID = new FlexID(); // pseudo code for test
+//							DFID = new FlexID(); // pseudo code for test						
+//							connID = new connID(); // pseudo code for test
+//								
+//							socket = sock;
+//						}
+						
+						
 						if(retransmission == true) {
 							socket.write(message); // stop-and-wait
 							lock = 0;
