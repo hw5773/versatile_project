@@ -7,13 +7,6 @@ import java.net.Socket;
 
 
 public class FogOS_Server {
-
-	public static void printString(byte[] b) {
-		System.out.print("Text [String format]: ");
-		String str = new String(b);
-		System.out.println(str);
-	}
-	
 	public static void main(String[] args) {
 		FlexIDSession FS1 = FlexIDSession.accept();;
 		try {
@@ -22,16 +15,22 @@ public class FogOS_Server {
 				System.exit(0);
 			}
 			
+			System.out.println("Server sends a message to the client.");
+			
+			int dataSize = 10000;
+			int i = 0;
+			
+			System.out.println("Server sends a entire data size to the client.");
+			FS1.send(Conversion.int32ToByteArray(dataSize));
+			byte[] message = "a".getBytes();
 			while(true) {
-				byte[] msg = new byte[2048];
-				int msgLen;
-				if((msgLen = FS1.receive(msg)) > 0) {
-					System.out.println("[Server] Received message size: " + msgLen);
-//					Conversion.byteToAscii(msg, msgLen);
-				}
-//				Thread.sleep(2000);
+				if(FS1.send(message) > 0) // always true unless it exceeds server's wbuf size 
+					i++;
+				if(i >= dataSize) break;
 			}
 			
+			System.out.println("done");
+			Thread.sleep(1000000);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(0);

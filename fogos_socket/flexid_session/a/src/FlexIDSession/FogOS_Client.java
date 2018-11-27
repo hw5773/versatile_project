@@ -13,6 +13,7 @@ public class FogOS_Client {
 		FlexID DFID = new FlexID();
 		System.out.println("Client connects to the server.");
 		FlexIDSession FS1 = new FlexIDSession(SFID, DFID);
+		
 		//DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
 		
 		try {
