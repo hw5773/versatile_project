@@ -27,13 +27,6 @@ db_select = "/dbquery/select/flexMnger"
 db_delete = "/dbquery/delete/flexMnger"
 db_update = "/dbquery/update/flexMnger"
 
-'''
-Send query to a DB (and wait a response if it is necessary).
-
-@param query    Payload of message
-@param topic    SQL statement ex) insert
-@param wait     If this param is set, should wait a response
-'''
 def send_DBquery(query, topic, wait):
     queryID = codecs.encode(os.urandom(4), 'hex_codec').decode()
     queryID = '0x' + queryID
@@ -56,13 +49,6 @@ def send_DBquery(query, topic, wait):
             continue
     return queryID
 
-'''
-Generate flag for FlexID 
-
-@param cache_bit        Cache bit
-@param segment_bit      Segment bit
-@param collision_mngt   Collision management bit
-'''
 def gen_flag(cache_bit, segment_bit, collision_mngt):
 
     flag = 0
@@ -80,12 +66,6 @@ def gen_flag(cache_bit, segment_bit, collision_mngt):
 
     return flag
 
-'''
-Generate new Device ID using given temporary ID
-
-@param deviceID Temporary device ID
-@param flag     If a given temporary ID exists, increase the management bit for 1
-'''
 def join_genID(deviceID, flag):
 
     # deviceID's cache bit and segment flag are 0, thus only use 4 bit management number
@@ -222,7 +202,6 @@ def join(tempID, payload):
         client.publish("/configuration/join_ack/" + tempID, query)
 
 
-# Unjoin the target device
 def leave(tempID, payload):
     print ("\n\n ##Process - Leave\n")
 
@@ -479,7 +458,7 @@ def update(tempID, payload):
 
 
 def query(tempID, payload):
-    #print ("\n ##Process - Query\n")     
+    print ("\n ##Process - Query\n")     
      
     queryID = payload.get('queryID')
     relay = payload.get('relay')
@@ -540,21 +519,73 @@ def query(tempID, payload):
         reply = json.dumps(reply)
         client.publish("/utilization/reply/" + tempID, reply)
 
-def find_group(attributes):
+
+def find_group(deviceID, attributes):
+    
     #TODO Search DB
 
+    if len(attributes) == 1:
+        data = {'attr1':attributes[0]}
+    elif len(attributes) == 2:
+        data = {'attr1':attributes[0], 'attr2':attributes[1]}
+    elif len(attributes) == 3:
+        data = {'attr1':attributes[0], 'attr2':attributes[1], 'attr3':attributes[2]}
+    else:
+        raise Exception ("Group attribute Error!\n")
 
-    group_list = []
-    return group_list
+    # find group
+    db_query = {'table':'GroupList', 'data':[data]}
+    queryID = send_DBquery(db_query, db_select, True)
+    db_payload = dbQuery_cache[queryID]
+    exist = db_payload.get('data')
+    del dbQuery_cache[queryID]
 
-def gen_group(attributes):
-    #TODO
+    if exist is '' or not exist:
+        return False 
 
-    group_id = []
+    return exist
+
+
+def gen_group(deviceID, attributes):
+
+    # temp group ID
+    newID = 'f2a0c067cfcd829625b8a1c2de79b1add72b28a269'
+
+    # TODO: collision check
+
+    data = {'groupID':newID, 'memberID':deviceID}
+    db_query = {'table':'GroupMember', 'data':[data]}
+    queryID = send_DBquery(db_query, db_insert, True)
+    db_payload = dbQuery_cache[queryID]
+    db_error = db_payload.get('error')
+    if db_error is not 0:
+        raise Exception ('Group Generate DB error1')
+    del dbQuery_cache[db_query]
+
+
+    if len(attributes) == 1:
+        data = {'groupID':newID, 'attr1':attributes[0]}
+    elif len(attributes) == 2:
+        data = {'groupID':newID, 'attr1':attributes[0], 'attr2':attributes[1]}
+    elif len(attributes) == 3:
+        data = {'groupID':newID, 'attr1':attributes[0], 'attr2':attributes[1], 'attr3':attributes[2]}
+    else:
+        raise Exception ("Group attribute Error!\n");
+        
+    db_query = {'table':'GroupList', 'data':[data]}
+    queryID = send_DBquery(db_query, db_insert, True)
+    db_payload = dbQuery_cache[queryID]
+    db_error = db_payload.get('error')
+    if db_error is not 0:
+        raise Exception ('Group Generate DB error2')
+    del dbQuery_cache[db_query]
+
+    group_id = [newID]
     return group_id
 
 
 def group_join(tempID, payload):
+    print ("\n ##Process - Group Join\n")     
 
     group_joinID = payload.get('gjoinID')
     relay = payload.get('relay')
@@ -580,12 +611,16 @@ def group_join(tempID, payload):
         attributes = payload.get('attributes')
        
         # Find groups which satisfy conditions
-        group_ids = find_group(attributes) #group_ids type is list
-        # No group matches condition
+        print ("Find Group... ")
+        group_ids = find_group(attributes) #group_ids is a list of GroupID
+        new = 0
+        # If no group exist, generate new group
         if not group_ids:
+            print ("Generate New Group...")
             group_ids = gen_group(attributes)
+            new = 1
 
-        query = {"error:": error, "gjoinID": group_joinID, "groupID": group_ids, "relay": relay}
+        query = {"error:": error, "gjoinID": group_joinID, "groupID": group_ids, "new":new, "relay": relay}
         query = json.dumps(query)
         print (query)
         client.publish("/configuration/group_join_ack/" + tempID, query)
@@ -603,6 +638,7 @@ def group_join(tempID, payload):
 
 
 def group_leave(tempID, payload):
+    print ("\n ##Process - Group Leave\n")     
 
     group_leaveID = payload.get("gleaveID")
     relay = payload.get("relay")
@@ -613,18 +649,18 @@ def group_leave(tempID, payload):
             deviceID = tempID
         else:
             deviceID = relay[-1]
- 
         print ("Device ID: " + deviceID)
 
-        db_query = {}#{'table':'Device', 'data':[{'deviceId':deviceID}]}
+        groupID = payload.get('groupID')
+        print ("Group ID: " + groupID)
+
+        db_query = {'table':'GroupMember', 'data':[{'GroupID':groupID, 'MemberID':deviceID}]}
         queryID = send_DBquery(db_query, db_delete, True)
         db_payload = dbQuery_cache[queryID]
         db_error = db_payload.get('error')
         if db_error is not 0:
-            raise Exception ('Leave DB error')
+            raise Exception ('Group Leave DB error')
         del dbQuery_cache[queryID]
-   
-        del deviceID_cache[deviceID]
     
         print ("\nDB Update Completed..")
         query = {"error:": error, "relay":relay}
@@ -633,26 +669,53 @@ def group_leave(tempID, payload):
         
         print ("\n ##Process Completed - Group Leave\n")
 
-
-
     except Exception as e:
         error = 1
         print("Group Leave error: ", e)
         query = {"error": error, "gleaveID":group_leaveID, "relay": relay}
         query = json.dumps(query)
         client.publish("/configuration/group_leave_ack/" + tempID, query)
+
 
 def group_selection(tempID, payload):
+    print ("\n ##Process - Group Selection\n")     
    
+    group_selectID = payload.get("gselectID")
+    relay = payload.get('relay')
     try:
-        error = 0;
+        error = 0
+        
+        if relay == "none":
+            deviceID = tempID
+        else:
+            deviceID = relay[-1]
+        print ("Device ID: " + deviceID)
+
+        groupID = payload.get('groupID')
+        print ("Selected Group ID: " + groupID)
+        
+        data = {'groupID':groupID, 'memberID':deviceID}
+        db_query = {'table':'GroupMember', 'data':[data]}
+        queryID = send_DBquery(db_query, db_insert, True)
+        db_payload = dbQuery_cache[queryID]
+        db_error = db_payload.get('error')
+        if db_error is not 0:
+            raise Exception ('Group Generate DB error1')
+        del dbQuery_cache[db_query]
+
+        print ("\nDB Update Completed..")
+        query = {"error:": error, "relay":relay}
+        query = json.dumps(query)
+        client.publish("/configuration/group_select_ack/" + tempID, query)
+        
+        print ("\n ##Process Completed - Group Select\n")
 
     except Exception as e:
         error = 1
-        print("Group Leave error: ", e)
-        query = {"error": error, "gleaveID":group_leaveID, "relay": relay}
+        print("Group Selection error: ", e)
+        query = {"error": error, "gselectID":group_selectID, "relay": relay}
         query = json.dumps(query)
-        client.publish("/configuration/group_leave_ack/" + tempID, query)
+        client.publish("/configuration/group_select_ack/" + tempID, query)
 
 
 
@@ -665,7 +728,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe("/configuration/update/#")
     client.subscribe("/configuration/group_join/#")
     client.subscribe("/configuration/group_leave/#")
-    clinet.subscribe("/configuration/group_selection/#")
+    client.subscribe("/configuration/group_select/#")
     client.subscribe("/utilization/query/#")
 
 def on_db_connect(client, userdata, flags, rc):
