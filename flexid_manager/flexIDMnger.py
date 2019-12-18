@@ -10,9 +10,9 @@ import time
 
 
 # IP, Port # of universal broker & DB
-broker1 = "147.46.219.79"
-broker2 = "147.47.208.190"
-db_broker = "147.46.219.79"
+broker1 = ""
+broker2 = ""
+db_broker = ""
 
 # global 
 deviceID_cache = {}
@@ -38,15 +38,12 @@ def send_DBquery(query, topic, wait):
     topic = topic + '/' + queryID
 
     print (topic, query)
-    #TODO DB implementation
-    '''
     db_client.publish(topic, query)
 
     #wait response from DB
     if wait:
         while dbQuery_cache[queryID] == "None":
             continue
-    '''
     return queryID
 
 def gen_flag(cache_bit, segment_bit, collision_mngt):
@@ -77,14 +74,12 @@ def join_genID(deviceID, flag):
     deviceID_cache[newID] = "None"
     
     print ("\nCheck DeviceID collision...")
-    '''
     db_query = {'table':'Device', 'data':[{'deviceId':newID}]}
     queryID = send_DBquery(db_query, db_select, True)
-    '''
 
     return newID
     
-    # TODO:check if the data exists
+    # check if the data exists
     payload = dbQuery_cache[queryID]
     exist = payload.get('data')
 
@@ -109,10 +104,8 @@ def join(tempID, payload, flag):
     else:
         print("Something Wrong!!")
 
-    print(payload)
     try:
         error = 0
-       
         
         if relay == "none":
             deviceID = tempID
@@ -122,10 +115,8 @@ def join(tempID, payload, flag):
         print ("Temporary DeviceID: " + deviceID)
 
         # Device ID collision check
-        print (time.time(), "id_gen s")
         deviceID = join_genID(deviceID, 0)
         print ("Generated DeviceID: " + deviceID)
-        print(time.time(), "id_gen e")
 
         pubKey = payload.get('pubKey')
 
@@ -157,8 +148,6 @@ def join(tempID, payload, flag):
             print ("IPv4 address: " + ipv4)
             print ("wifiSSID: " + wifiSSID)
         
-        print (time.time(), "parse")
-        '''
         db_query = {'table':'Device', 'data':info_list}
         queryID = send_DBquery(db_query, db_insert, True)
         db_payload = dbQuery_cache[queryID]
@@ -166,7 +155,6 @@ def join(tempID, payload, flag):
         if db_error is not 0:
             raise Exception ('Join DB error')
         del db_query
-        '''
 
         neighbor_list = []
         print ("\n----------Neighbor info.----------")
@@ -191,8 +179,6 @@ def join(tempID, payload, flag):
             temp_dict = {'neighborIface':neighborIface, 'neighborIpv4':neighborIpv4, 'neighborHwAddress':neighborHwAddress, 'neighborId':neighborFlexID, 'deviceId':deviceID}
             neighbor_list.append(temp_dict)
        
-        print (time.time(), "parse2")
-        '''
         db_query = {'table':'Neighbor', 'data':neighbor_list}
         queryID = send_DBquery(db_query, db_insert, True)
         db_payload = dbQuery_cache[queryID]
@@ -200,7 +186,7 @@ def join(tempID, payload, flag):
         if db_error is not 0:
             raise Exception ('Join DB error')
         del db_query
-        '''
+        
         print ("\nDB Update Completed..")
         query = {"error:": error, "id": deviceID, "relay": relay}
         query = json.dumps(query)
@@ -231,7 +217,6 @@ def leave(tempID, payload):
  
         print ("Device ID: " + deviceID)
 
-        '''
         db_query = {'table':'Device', 'data':[{'deviceId':deviceID}]}
         queryID = send_DBquery(db_query, db_delete, True)
         db_payload = dbQuery_cache[queryID]
@@ -241,7 +226,6 @@ def leave(tempID, payload):
         del dbQuery_cache[queryID]
    
         del deviceID_cache[deviceID]
-        '''
 
         print ("\nDB Update Completed..")
         query = {"error:": error, "relay":relay}
@@ -310,14 +294,12 @@ def register(tempID, payload):
 
 
         # Check whether the device exists
-        '''
         if deviceID in deviceID_cache:
             exist = True
         else:
             exist = deviceExist(deivceID)
             if not exist:
                 raise Exception ('No Device Error')
-        '''
 
         registerList = payload.get('registerList')
 
@@ -403,19 +385,15 @@ def update(tempID, payload):
         print ("DeviceID: " + deviceID)
  
         # Check whether the device exists 
-        '''
         if deviceID in deviceID_cache:
             exist = True
         else:
             exist = deviceExist(deivceID)
             if not exist:
                 raise Exception ('No Device Error')
-        '''
 
         providingID = payload.get('id')
 
-       
-        '''
         # check if this content/service exists
         db_query = {}
         queryID = send_DBquery(db_query, db_select, True)
@@ -424,13 +402,11 @@ def update(tempID, payload):
         del dbQuery_cache[queryID]
         if exist is '' or not exist:
             raise Exception ('No Content/Service Error')
-        '''
         
         # check deregister
         deregister = payload.get('deregister')
         if deregister:
             print ("\n-- Deregister the Service/Content")
-            '''
             db_query = {'table':'RegisterList', 'data':[{'providingId':providingID}]}
             queryID = send_DBquery(db_query, db_delete, True)
             payload = dbQuery_cache[queryID]
@@ -438,7 +414,6 @@ def update(tempID, payload):
             if db_error is not 0:
                 raise Exception ('Update DB error')
             del dbQuery_cache[queryID]
-            '''
         else:
             attributes = payload.get('attributes')
             attr_idx = 0
@@ -453,15 +428,12 @@ def update(tempID, payload):
                 attr_val = attrList[i]
                 temp_data[attr_key] = attr_val
             db_query = {'table':'RegisterList', 'sdata':[temp_data], 'wdata':[{'providingId':providingID}]}
-            #print (db_query)
-            '''
             queryID = send_DBquery(db_query, db_update, True)
             payload = dbQuery_cache[queryID]
             db_error = payload.get('error')
             if db_error is not 0:
                 raise Exception ('Update DB error')
             del dbQuery_cache[queryID]
-            '''
         print ("\nDB Update Completed..")
         
         query = {"error:": error, "updateid": updateID, "relay": relay}
@@ -495,9 +467,6 @@ def query(tempID, payload):
         else:
             deviceID = relay[-1]
    
-        #print ("DeviceID: " + deviceID)
-   
-        '''
         # Check whether the device exists 
         if deviceID in deviceID_cache:
             exist = True
@@ -505,7 +474,6 @@ def query(tempID, payload):
             exist = deviceExist(deivceID)
             if not exist:
                 raise Exception ('No Device Error')
-        '''
         queryType = payload.get('queryType')
         category = payload.get('type')
         order = payload.get('order')
@@ -521,14 +489,12 @@ def query(tempID, payload):
             metricOperator = req.get('metricOperator')
 
         #print ("\nSearching " + queryType + "..")
-        #TODO: Search content/service from DB
-        '''
+        # Search content/service from DB
         db_query = {'table':'Device', 'data':[{'deviceId':deviceID}]}
         queryID = send_DBquery(db_query, db_select, True)
         db_payload = dbQuery_cache[queryID]
         exist = db_payload.get('data')
         del dbQuery_cache[queryID]
-        '''
 
         ids = ['TempId1', 'TempId2']
         reply = {"error:": error, "queryID": queryID, "desc": desc, "ids": ids, "relay": relay}
@@ -549,7 +515,7 @@ def query(tempID, payload):
 
 def find_group(deviceID, attributes):
     
-    #TODO Search DB
+    # Search DB
 
     if len(attributes) == 1:
         data = {'attr1':attributes[0]}
@@ -578,7 +544,7 @@ def gen_group(deviceID, attributes):
     # temp group ID
     newID = 'f2a0c067cfcd829625b8a1c2de79b1add72b28a269'
 
-    # TODO: collision check
+    # collision check
 
     data = {'groupId':newID, 'memberId':deviceID}
     db_query = {'table':'GroupMember', 'data':[data]}
@@ -766,7 +732,6 @@ def map_update (tempID, payload):
             exist = True
         else:
             db_query = {'table':'Device', 'data':[{'deviceId':deviceID}]}
-            '''
             queryID = send_DBquery(db_query, db_select, True)
             db_payload = dbQuery_cache[queryID]
             exist = db_payload.get('data')
@@ -775,7 +740,7 @@ def map_update (tempID, payload):
                 raise Exception ('No Device Error')
             else:
                 deviceID_cache[deviceID] = True
-            '''
+        
         # Update device information
         print ("\n---------- Update Device Info.----------")
         info_list = []
@@ -801,7 +766,6 @@ def map_update (tempID, payload):
             print ("IPv4 address: " + ipv4)
             print ("wifiSSID: " + wifiSSID)
         
-        '''
         db_query = {'table':'Device', 'data':info_list}
         queryID = send_DBquery(db_query, db_update, True)
         db_payload = dbQuery_cache[queryID]
@@ -809,7 +773,6 @@ def map_update (tempID, payload):
         if db_error is not 0:
             raise Exception ('MapUpdate DB error')
         del db_query
-        '''
 
         neighbor_list = []
         print ("\n----------Update Neighbor info.----------")
@@ -834,7 +797,6 @@ def map_update (tempID, payload):
             temp_dict = {'neighborIface':neighborIface, 'neighborIpv4':neighborIpv4, 'neighborHwAddress':neighborHwAddress, 'neighborId':neighborFlexID, 'deviceId':deviceID}
             neighbor_list.append(temp_dict)
        
-        '''
         db_query = {'table':'Neighbor', 'data':neighbor_list}
         queryID = send_DBquery(db_query, db_update, True)
         db_payload = dbQuery_cache[queryID]
@@ -842,7 +804,6 @@ def map_update (tempID, payload):
         if db_error is not 0:
             raise Exception ('MapUpdate DB error')
         del db_query
-        '''
 
         print ("\nDB Update Completed..")
         query = {"error:": error, "mapUpdateID": mapUpdateID, "relay": relay}
@@ -901,7 +862,6 @@ def on_message(client, userdata, msg):
     print ("Subscribe - Topic: " + msg.topic)
     topic = msg.topic.split('/')
     payload = json.loads(msg.payload.decode('utf-8'))
-    print(payload)
     if "configuration" == topic[1]:
         if "join" == topic[2]:
             deviceID = topic[3]
@@ -938,7 +898,6 @@ def on_message2(client, userdata, msg):
     print ("Subscribe - Topic: " + msg.topic)
     topic = msg.topic.split('/')
     payload = json.loads(msg.payload.decode('utf-8'))
-    print(payload)
     if "configuration" == topic[1]:
         if "join" == topic[2]:
             deviceID = topic[3]
@@ -1016,6 +975,7 @@ db_client.connect(db_broker, 1883, 60)
 #db_client.connect(broker, 1883, 60)
 
 if __name__ == "__main__":
+    print("ASDFASDFADSF")
     print("\n Start FlexID Manager...\n")
     #client.loop_forever()
     #db_client.loop_forever()
