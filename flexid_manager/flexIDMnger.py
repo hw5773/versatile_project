@@ -878,6 +878,12 @@ def on_message(client, userdata, msg):
         elif "group_join" == topic[2]:
             deviceID = topic[3]
             group_join(deviceID, payload)
+        elif "group_select" == topic[2]:
+            deviceID = topic[3]
+            group_select(deviceID, payload)
+        elif "group_leave" == topic[2]:
+            deviceID = topic[3]
+            group_leave(deviceID, payload)
         elif "mapUpdate" == topic[2]:
             deviceID = topic[3]
             map_update(deviceID, payload)
@@ -975,7 +981,6 @@ db_client.connect(db_broker, 1883, 60)
 #db_client.connect(broker, 1883, 60)
 
 if __name__ == "__main__":
-    print("ASDFASDFADSF")
     print("\n Start FlexID Manager...\n")
     #client.loop_forever()
     #db_client.loop_forever()
